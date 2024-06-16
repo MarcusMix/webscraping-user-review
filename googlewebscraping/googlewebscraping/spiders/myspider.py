@@ -1,9 +1,10 @@
 import scrapy
 import time
 import pyautogui
-from selenium.webdriver.chrome.service import Service as ChromeService
 from googlewebscraping.spiders.web_driver import web_driver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 class MySpider(scrapy.Spider):
     name = "myspider"
@@ -23,32 +24,44 @@ class MySpider(scrapy.Spider):
     def __init__(self, *args, **kwargs):
         super(MySpider, self).__init__(*args, **kwargs)
         self.driver = web_driver()
-
     
     def parse(self, response):
         self.driver.get(response.url)
-        time.sleep(2)
-        
-        botao_classificacoes = self.driver.find_element(By.XPATH, '//*[@id="yDmH0d"]/c-wiz[2]/div/div/div[1]/div/div[2]/div/div[1]/div[1]/c-wiz[4]/section/header/div/div[2]/button')
-        botao_classificacoes.click()
-        time.sleep(2)
-        
-        combobox_avaliacoes = self.driver.find_element(By.XPATH, '//*[@id="sortBy_1"]/div[2]')
-        combobox_avaliacoes.click()        
-        time.sleep(2)
-        
-        pyautogui.click(x=393, y=428) 
-        time.sleep(2)
 
+        try:
+            botao_classificacoes = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, '//*[@id="yDmH0d"]/c-wiz[2]/div/div/div[1]/div/div[2]/div/div[1]/div[1]/c-wiz[4]/section/header/div/div[2]/button'))
+            )
+            botao_classificacoes.click()
+        except:
+            print("O botao_classificacoes não ficou clicável a tempo.")
+
+        try:
+            combobox_avaliacoes =  WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, '//*[@id="sortBy_1"]/div[2]'))
+            ) 
+            combobox_avaliacoes.click()
+        except:
+            print("O combobox_avaliacoes não ficou clicável a tempo.")
+            
+        try:        
+            time.sleep(2)
+            pyautogui.click(x=393, y=428) 
+        except:
+            print("O pyautogui não funcionou.")
+
+        time.sleep(1.5)
         html = self.driver.page_source
         sel_response = scrapy.Selector(text=html)
 
         page_name = sel_response.css('h1.Fd93Bb::text').get()
-    
         for item in sel_response.css('div.RHo1pe'):
             div_star = item.css('div.iXRFPc')
             if div_star:
                 star = div_star.xpath('@aria-label').get()
+                
+            response_div = item.xpath('.//div[@class="ras4vb"]/div')
+            response_text = response_div.xpath('string(.)').get()
             yield {
                 'app_name' : page_name,
                 'user_reviewer': item.css('div.X5PpBb::text').get(),
@@ -57,7 +70,7 @@ class MySpider(scrapy.Spider):
                 'commentary' : item.css('div.h3YV2d::text').get(),
                 'user_response' : item.css('div.I6j64d::text').get(),
                 'date_response' : item.css('div.I9Jtec::text').get(),
-                'response' : item.css('div.ras4vb + div::text').get()
+                'response' : response_text
             }
 
     def closed(self, reason):
