@@ -44,13 +44,22 @@ class MySpider(scrapy.Spider):
         except:
             print("O combobox_avaliacoes não ficou clicável a tempo.")
             
-        try:        
-            time.sleep(2)
-            pyautogui.click(x=393, y=428) 
+        time.sleep(2)
+        try:
+            mais_recentes = WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//div[@role='menu']//span[contains(@aria-label, 'Mais recentes')]"))
+            )
+            mais_recentes.click()
         except:
-            print("O pyautogui não funcionou.")
+            print("O mais_recentes não ficou clicável a tempo.")
+            
+        # try:        
+        #     time.sleep(2)
+        #     pyautogui.click(x=393, y=428) 
+        # except:
+        #     print("O pyautogui não funcionou.")
 
-        time.sleep(1.5)
+        time.sleep(2)
         html = self.driver.page_source
         sel_response = scrapy.Selector(text=html)
 
